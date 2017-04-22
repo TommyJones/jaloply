@@ -2,6 +2,12 @@
 # This script defines some common functions for use in this project
 ################################################################################
 
+### Stick libraries used here --------------------------------------------------
+library(stringr)
+library(lubridate)
+library(reshape2)
+
+### Functions go here. Put a description in the comments -----------------------
 
 recursive_rbind <- function(list_object){
   # this function takes a list and performs rbind in a recursive way
