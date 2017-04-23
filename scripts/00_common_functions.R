@@ -6,6 +6,7 @@
 library(stringr)
 library(lubridate)
 library(reshape2)
+library(httr)
 
 ### Functions go here. Put a description in the comments -----------------------
 
