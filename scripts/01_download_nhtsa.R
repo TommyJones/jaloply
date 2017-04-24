@@ -65,9 +65,12 @@ ImportFlatFile <- function(filepath){
   d <- scan(filepath, what = "character", sep = "\n")
   d <- stringr::str_conv(d, "UTF-8")
   
-  write.table(d, "../tmp.txt", sep = "\t", quote = T, row.names = F, col.names = F)
-  d <- read.delim(filepath, sep = "\t", colClasses = "character", header = F)
-  file.remove("../tmp.txt")
+  d <- read.delim(textConnection(paste(d, collapse = "\n")), 
+                  colClasses = "character",
+                  header = F)
+  # write.table(d, "../tmp.txt", sep = "\t", quote = T, row.names = F, col.names = F)
+  # d <- read.delim(filepath, sep = "\t", colClasses = "character", header = F)
+  # file.remove("../tmp.txt")
   d
 }
 
