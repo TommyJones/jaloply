@@ -52,7 +52,7 @@ batches <- seq(1, length(vin_list), by = step_size)
 vin_list <- lapply(batches, function(x) vin_list[ x:min(x + step_size - 1, length(vin_list)) ])
 
 # let 'er rip! 
-vin_info <- lapply(vin_info, function(x){
+vin_info <- lapply(vin_list, function(x){
   Sys.sleep(0.5)
   GetVinBatch(vins = x)
 })
