@@ -62,3 +62,7 @@ vin_info <- parallel::mclapply(vin_info, function(x){
   read.csv(textConnection(x), colClasses = "character")
 }, mc.cores = 4)
 
+vin_info <- do.call(rbind, vin_info)
+
+save(vin_info, file = "data_derived/vin_info.RData")
+
