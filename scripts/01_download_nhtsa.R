@@ -68,9 +68,7 @@ ImportFlatFile <- function(filepath){
   d <- read.delim(textConnection(paste(d, collapse = "\n")), 
                   colClasses = "character",
                   header = F)
-  # write.table(d, "../tmp.txt", sep = "\t", quote = T, row.names = F, col.names = F)
-  # d <- read.delim(filepath, sep = "\t", colClasses = "character", header = F)
-  # file.remove("../tmp.txt")
+
   d
 }
 
