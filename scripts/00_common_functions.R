@@ -49,14 +49,28 @@ CalcRollingCount <- function(data, date_var, platform_var, component_var,
   data$component[ is.na(data$component) ] <- "unknown"
   data <- data[ ! is.na(data$date) , ]
   
+  # Make sure we have full coverage of dates, platforms, and components
+  # A platform won't have any entries before its first entry in the database
+  # (This approxmiates a platform not being manufactured)
+  date_fill <- data.frame(date = sort(unique(data$date)),
+                          stringsAsFactors = F)
+  
+  # # for now (4/27/2017) component_fill and fill_mat are unused
+  # component_fill <- data.frame(component = sort(unique(data$component)),
+  #                              stringsAsFactors = F)
+  # 
+  # fill_mat <- merge(date_fill, component_fill, all = T)
+  
   # split by platform and component for first round of counts
   data <- by(data, INDICES = data$platform, function(x) x)
   
   data <- parallel::mclapply(data, function(y){
+   
+    drange <- sort(unique(date_fill$date[ date_fill$date >= min(y$date) ])) # calls "global" date_fill
     
     components <- by(y, INDICES = y$component, function(x){
       
-      drange <- sort(unique(x$date))
+      # x <- merge(x, date_fill, all = T) # calls "global" date_fill
       
       result <- sapply(drange, function(date){
         sum(x$count[ x$date %in% seq(date - window - 1, date, by = "day") ], na.rm = T)

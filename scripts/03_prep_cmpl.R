@@ -64,42 +64,41 @@ cmpl_formatted$component <- gsub("SERVICE BRAKES, [A-Z]+$", "SERVICE BRAKES",
 cmpl_formatted$component[ is.na(cmpl_formatted$component) ] <- "UNKNOWN OR OTHER"
 
 # for each platform, get the earliest date of record
-first_date <- cmpl_formatted[ , c("datea", "platform") ]
-first_date <- first_date[ ! duplicated(first_date) , ]
-first_date <- by(first_date, INDICES = first_date$platform, function(x){
-  data.frame(first_date = x$datea[ which.min(x$datea) ],
-             platform = x$platform[ 1 ],
-             stringsAsFactors = FALSE)
-})
-first_date <- recursive_rbind(first_date)
+# first_date <- cmpl_formatted[ , c("datea", "platform") ]
+# first_date <- first_date[ ! duplicated(first_date) , ]
+# first_date <- by(first_date, INDICES = first_date$platform, function(x){
+#   data.frame(first_date = x$datea[ which.min(x$datea) ],
+#              platform = x$platform[ 1 ],
+#              stringsAsFactors = FALSE)
+# })
+# first_date <- recursive_rbind(first_date)
 
 # fill in dates, platforms, and components
-date_fill <- seq(min(cmpl_formatted$month, na.rm = T), 
-                 max(cmpl_formatted$month, na.rm = T), by = "day")
-
-date_fill <- unique(lubridate::ceiling_date(as.Date(format(date_fill, "%Y-%m-02")), "month") - 1)
-
-date_fill <- data.frame(month = date_fill, stringsAsFactors = F)
-
-platform_fill <- data.frame(platform = unique(cmpl_formatted$platform),
-                            stringsAsFactors = F)
-
-component_fill <- data.frame(component = unique(cmpl_formatted$component),
-                             stringsAsFactors = FALSE)
-
-fill_mat <- merge(date_fill, platform_fill, all = TRUE)
-
-fill_mat <- merge(fill_mat, component_fill, all = TRUE)
-
-cmpl_formatted <- merge(cmpl_formatted, 
-                        data.frame(month = date_fill, stringsAsFactors = F),
-                        all = TRUE)
-
-
-#### WRONG !!!! YOU NEED TO FILL IN EVERY DATE + PLATFORM + COMPONENT. THEN
-# FIGURE OUT WHAT THE FIRST COMPLAINT DAY IS AND REMOVE THOSE ENTRIES AFTER YOU
-# CALCULATE THE T-STATISTIC
-
+# date_fill <- seq(min(cmpl_formatted$month, na.rm = T), 
+#                  max(cmpl_formatted$month, na.rm = T), by = "day")
+# 
+# date_fill <- unique(lubridate::ceiling_date(as.Date(format(date_fill, "%Y-%m-02")), "month") - 1)
+# 
+# date_fill <- data.frame(month = date_fill, stringsAsFactors = F)
+# 
+# platform_fill <- data.frame(platform = unique(cmpl_formatted$platform),
+#                             stringsAsFactors = F)
+# 
+# component_fill <- data.frame(component = unique(cmpl_formatted$component),
+#                              stringsAsFactors = FALSE) # using this in next section
+# 
+# fill_mat <- merge(date_fill, platform_fill, all = TRUE)
+# 
+# fill_mat <- merge(fill_mat, first_date)
+# 
+# fill_mat <- fill_mat[ fill_mat$month >= fill_mat$first_date , ] # remove entries before car "existed"
+# 
+# cmpl_formatted <- merge(cmpl_formatted, 
+#                         fill_mat,
+#                         all = TRUE)
+# 
+# rm(fill_mat)
+# gc()
 
 ### Apply the t-stat functions -------------------------------------------------
 
@@ -108,7 +107,7 @@ cmpl_tstat <- CalcRollingCount(data = cmpl_formatted,
                                platform_var = "platform",
                                component_var = "component",
                                window = 365,
-                               cpus = 4)
+                               cpus = 3)
 
 cmpl_tstat$dstat <- CalcTStatistic(n1 = cmpl_tstat$count,
                                    N1 = cmpl_tstat$platform_tot,
