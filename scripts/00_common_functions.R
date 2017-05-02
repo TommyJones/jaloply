@@ -177,16 +177,18 @@ CalcTStatistic <- function(n1, N1, n2, N2, scale = NULL, cohend = FALSE){
 
 
 Summarize <- function(docs){
-  # This is the document summarization function
-  
+  # this is the working document summarization function
+  # it takes a vector of documents as input and returns a vector of sentences
+  # as output. 
   
   # parse sentences
   split <- stringi::stri_split_boundaries(docs, type = "sentence")
   split <- unlist(split)
   names(split) <- 1:length(split)
   
-  # make dtm
-  dtm <- textmineR::CreateDtm(split)
+  # make dtm with stems
+  dtm <- textmineR::CreateDtm(split, ngram_window = c(1,2),
+                              stem_lemma_function = function(x) SnowballC::wordStem(x, "porter"))
   
   # make adjacency matrix
   adj <- dtm / sqrt(sum(dtm * dtm))
