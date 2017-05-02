@@ -174,3 +174,33 @@ CalcTStatistic <- function(n1, N1, n2, N2, scale = NULL, cohend = FALSE){
   }
   t
 }
+
+
+Summarize <- function(docs){
+  # This is the document summarization function
+  
+  
+  # parse sentences
+  split <- stringi::stri_split_boundaries(docs, type = "sentence")
+  split <- unlist(split)
+  names(split) <- 1:length(split)
+  
+  # make dtm
+  dtm <- textmineR::CreateDtm(split)
+  
+  # make adjacency matrix
+  adj <- dtm / sqrt(sum(dtm * dtm))
+  
+  adj <- adj %*% Matrix::t(adj)
+  
+  adj <- igraph::graph.adjacency(adj, mode = "undirected", weighted=TRUE, diag = FALSE)
+  
+  # top N sentences (keywords) based on eigenvector centrality
+  top_n <- igraph::evcent(graph = adj)
+  
+  top_n <- top_n$vector[ top_n$vector >= 0.75 ]
+  
+  split[ names(top_n)[ order(top_n, decreasing = T) ] ]
+  
+}
+
