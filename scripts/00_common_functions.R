@@ -126,6 +126,12 @@ CalcRollingCount <- function(data, date_var, platform_var, component_var,
   result <- merge(result, components, all = T)
   result <- merge(result, total, all = T)
   
+  # replace any missing values with zero
+  result$count[ is.na(result$count) ] <- 0
+  result$platform_tot[ is.na(result$platform_tot) ] <- 0
+  result$component_tot[ is.na(result$component_tot) ] <- 0
+  result$total[ is.na(result$total) ] <- 0
+  
   # final cleanup and return result
   result <- result[ , c("date", "platform", "component", "count",
                         "platform_tot", "component_tot", "total") ]

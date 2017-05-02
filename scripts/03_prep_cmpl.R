@@ -110,11 +110,13 @@ cmpl_tstat <- CalcRollingCount(data = cmpl_formatted,
                                cpus = 3)
 
 cmpl_tstat$dstat <- CalcTStatistic(n1 = cmpl_tstat$count,
-                                   N1 = cmpl_tstat$platform_tot,
+                                   N1 = cmpl_tstat$platform_tot + 1,
                                    n2 = cmpl_tstat$component_tot,
-                                   N2 = cmpl_tstat$total,
+                                   N2 = cmpl_tstat$total + 1,
                                    cohend = TRUE)
 
 cmpl_tstat$pdstat <- pnorm(cmpl_tstat$dstat)
 
-### Remove all entries prior to first complaint in the database ----------------
+### Save and and exit ----------------------------------------------------------
+
+save(cmpl_formatted, cmpl_tstat, file = "data_derived/cmpl_tstat.RData")
