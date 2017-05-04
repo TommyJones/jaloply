@@ -42,8 +42,17 @@ cmpl_formatted$vin_make[ is.na(cmpl_formatted$vin_make) ] <-
 cmpl_formatted$vin_model[ is.na(cmpl_formatted$vin_model) ] <- 
   toupper(cmpl_formatted$modeltxt[ is.na(cmpl_formatted$vin_model) ])
 
-cmpl_formatted$vin_modelyear[ is.na(cmpl_formatted$vin_modelyear) ] <- 
-  toupper(cmpl_formatted$yeartxt[ is.na(cmpl_formatted$vin_modelyear) ])
+cmpl_formatted$vin_modelyear[ is.na(cmpl_formatted$vin_modelyear) | 
+                                cmpl_formatted$vin_modelyear == ""] <- 
+  toupper(cmpl_formatted$yeartxt[ is.na(cmpl_formatted$vin_modelyear) | 
+                                    cmpl_formatted$vin_modelyear == ""])
+
+cmpl_formatted$vin_modelyear[ as.numeric(cmpl_formatted$vin_modelyear) >  
+                                as.numeric(format(cmpl_formatted$datea, "%Y")) &
+                                ! cmpl_formatted$yeartxt == "" ] <-
+  cmpl_formatted$yeartxt[ as.numeric(cmpl_formatted$vin_modelyear) >  
+                            as.numeric(format(cmpl_formatted$datea, "%Y")) &
+                            ! cmpl_formatted$yeartxt == "" ]
 
 ### Prepare for applying to the t-stat function --------------------------------
 
