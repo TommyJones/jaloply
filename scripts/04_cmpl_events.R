@@ -120,10 +120,12 @@ names(corvette)
 
 # so inefficient!!!
 corvette <- lapply(corvette, function(x){
-  merge(x[ , c("date", "platform", "component") ],
-        cmpl_formatted[ cmpl_formatted$platform == "CHEVROLET_CORVETTE" , ],
-        by.x = c("date", "platform", "component"),
-        by.y = c("month", "platform", "component"))
+  dates <- seq(min(x$date) - 364, max(x$date), by = "day")
+  
+  cmpl_formatted[ cmpl_formatted$platform %in% x$platform &  
+                    cmpl_formatted$component %in% x$component &
+                    cmpl_formatted$datea %in% dates , ]
+  
 })
 
 # which model years matter?
@@ -133,7 +135,10 @@ corvette_my <- lapply(corvette, function(x){
   
   cs <- cumsum(sort(my_freq, decreasing = TRUE))
   
-  result <- intersect(names(cs)[ cs >= 0.8 ], 
+  if(max(my_freq) >= 0.8)
+    return(sort(names(my_freq)[ my_freq > 0.15 ]))
+  
+  result <- intersect(names(cs)[ cs < 0.8 ], 
                       names(my_freq)[ my_freq > 0.05 ])
   
   sort(result)
