@@ -58,6 +58,10 @@ cmpl_formatted$component <- sapply(strsplit(cmpl_formatted$compdesc, split = ":"
 cmpl_formatted$component <- gsub("FUEL SYSTEM, [A-Z]+$", "FUEL SYSTEM", 
                                  cmpl_formatted$component)
 
+cmpl_formatted$component <- gsub("FUEL/PROPULSION", "FUEL", 
+                                 cmpl_formatted$component)
+
+
 cmpl_formatted$component <- gsub("SERVICE BRAKES, [A-Z]+$", "SERVICE BRAKES", 
                                  cmpl_formatted$component)
 
