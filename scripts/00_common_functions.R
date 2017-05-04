@@ -186,6 +186,9 @@ Summarize <- function(docs){
   split <- unlist(split)
   names(split) <- 1:length(split)
   
+  # remove any duplicates
+  split <- split[ ! duplicated(split) ]
+  
   # make dtm with stems
   dtm <- textmineR::CreateDtm(split, ngram_window = c(1,2),
                               stem_lemma_function = function(x) SnowballC::wordStem(x, "porter"))
