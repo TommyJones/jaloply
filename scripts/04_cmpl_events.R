@@ -64,13 +64,29 @@ SplitIssues <- function(y, mid){
     
     return(list(`1` = y))
     
-  } else { # if we have more than one event...
+    
+  } else if (length(breakpoint_dates) == 1) { # if we have two events...
+    split_issues <- list(`1` = y[ y$date < breakpoint_dates , ],
+                         `2` = y[ y$date >= breakpoint_dates , ])
+    
+    # drop if any that remain have fewer than 5 months over the threshold
+    split_issues <- split_issues[ sapply(split_issues, nrow) >= 5 ]
+    
+    names(split_issues) <- seq_along(split_issues)
+    
+    split_issues
+    
+  } else { # if we have more than two events...
     
     split_issues <- vector(mode = "list", length = length(breakpoint_dates) + 1)
     
-    for(j in seq_along(breakpoint_dates)){
-      split_issues[[ j ]] <- y[ y$date < breakpoint_dates[ j ] , ]
+    split_issues[[ 1 ]] <- y[ y$date < breakpoint_dates[ 1 ] , ]
+    
+    for(j in 2:length(breakpoint_dates)) {
+      split_issues[[ j ]] <- y[ y$date < breakpoint_dates[ j ] &
+                                  y$date >= breakpoint_dates[ j - 1 ], ]
     }
+    
     split_issues[[ length(split_issues) ]] <- 
       y[ y$date >= breakpoint_dates[ length(breakpoint_dates) ] , ]
     
@@ -105,7 +121,9 @@ names(corvette)
 # so inefficient!!!
 corvette <- lapply(corvette, function(x){
   merge(x[ , c("date", "platform", "component") ],
-        cmpl_formatted[ cmpl_formatted$platform == "CHEVROLET_CORVETTE" , ])
+        cmpl_formatted[ cmpl_formatted$platform == "CHEVROLET_CORVETTE" , ],
+        by.x = c("date", "platform", "component"),
+        by.y = c("month", "platform", "component"))
 })
 
 # which model years matter?
@@ -115,7 +133,7 @@ corvette_my <- lapply(corvette, function(x){
   
   cs <- cumsum(sort(my_freq, decreasing = TRUE))
   
-  result <- intersect(names(cs)[ cs < 0.8 ], 
+  result <- intersect(names(cs)[ cs >= 0.8 ], 
                       names(my_freq)[ my_freq > 0.05 ])
   
   sort(result)
