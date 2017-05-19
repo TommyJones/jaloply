@@ -184,6 +184,7 @@ Summarize <- function(docs){
   # parse sentences
   split <- stringi::stri_split_boundaries(docs, type = "sentence")
   split <- unlist(split)
+  split <- stringr::str_conv(split, "UTF-8")
   names(split) <- 1:length(split)
   
   # remove any duplicates
