@@ -49,6 +49,19 @@ mid <- data.frame(date = sort(unique(cmpl_tstat$date)),
 
 # function to split issues
 SplitIssues <- function(y, mid){
+  # add dates to include up to a year before any place where pdstat is >= 0.75
+  add <- c(y$date, y$date - 364)
+  
+  add <- lubridate::ceiling_date(as.Date(format(add, "%Y-%m-02")), "month") - 1
+  
+  add <- unique(add)
+  
+  add <- data.frame(date = add, 
+                    platform = rep(y$platform[ 1 ], length(add)),
+                    component = rep(y$component[ 1 ], length(add)),
+                    stringsAsFactors = FALSE)
+  
+  y <- merge(y, add, all = TRUE)
   
   # get integers pertaining to dates in y
   checkdiff <- mid[ mid$date %in% y$date , ]
@@ -109,46 +122,132 @@ cmpl_events <- parallel::mclapply(cmpl_events, function(x){
 cmpl_events <- do.call(c, cmpl_events)
 
 
+### Set up empty event object --------------------------------------------------
+# Now that we've identified events, we neet to set up the event object and
+# fill it in with appropriate things
 
+cmpl_events2 <- strsplit(names(cmpl_events), split = "\\.")
 
-### Chevy corvette example -------------------------
-# I have a lot to work out, so this is mostly experimentation
+names(cmpl_events2) <- names(cmpl_events)
 
-corvette <- cmpl_events[ grepl("CHEVROLET_CORVETTE", names(cmpl_events)) ]
-
-names(corvette)
-
-# so inefficient!!!
-corvette <- lapply(corvette, function(x){
-  dates <- seq(min(x$date) - 364, max(x$date), by = "day")
-  
-  cmpl_formatted[ cmpl_formatted$platform %in% x$platform &  
-                    cmpl_formatted$component %in% x$component &
-                    cmpl_formatted$datea %in% dates , ]
-  
+cmpl_events2 <- lapply(cmpl_events2, function(x){
+  list(id = paste(x, collapse = "."),
+       platform = x[ 1 ],
+       component = x[ 2 ],
+       model_years = c(),
+       dates = c(),
+       narratives = c(),
+       summaries = c(),
+       tsbs = c(),
+       recalls = c(),
+       investigations = c(),
+       time_series = c(),
+       plot_object = c())
 })
 
-# which model years matter?
-corvette_my <- lapply(corvette, function(x){
-  my_freq <- table(x$vin_modelyear)
+
+# fill in dates
+cmpl_events2 <- mapply(function(a, b){
+  b$dates = a$date 
+  b
+}, a = cmpl_events, b = cmpl_events2,
+SIMPLIFY = FALSE)
+
+# fill in model years and narratives
+cmpl_events2 <- parallel::mclapply(cmpl_events2, function(x){
+  dates <- seq(min(x$dates), max(x$dates), by = "day")
+  
+  # get model years
+  my <- cmpl_formatted$vin_modelyear[ cmpl_formatted$platform %in% x$platform &  
+                                        cmpl_formatted$component %in% x$component &
+                                        cmpl_formatted$datea %in% dates ]
+  
+  my_freq <- table(my)
   my_freq <- my_freq / sum(my_freq, na.rm = T)
   
   cs <- cumsum(sort(my_freq, decreasing = TRUE))
   
-  if(max(my_freq) >= 0.8)
-    return(sort(names(my_freq)[ my_freq > 0.15 ]))
+  if(max(my_freq) >= 0.8){
+    result <- names(my_freq)[ my_freq > 0.15 ]
+  } else {
+    result <- intersect(names(cs)[ cs < 0.8 ], 
+                        names(my_freq)[ my_freq > 0.05 ])
+  }
   
-  result <- intersect(names(cs)[ cs < 0.8 ], 
-                      names(my_freq)[ my_freq > 0.05 ])
   
-  sort(result)
-})
+  x$model_years <- sort(result)
+  
+  # get narratives
+  if(length(x$model_years) > 0){
+    x$narratives <- cmpl_formatted$cdescr[ cmpl_formatted$platform %in% x$platform &
+                                             cmpl_formatted$component %in% x$component &
+                                             cmpl_formatted$datea %in% dates &
+                                             cmpl_formatted$vin_modelyear %in% x$model_years ]
+  } else {
+    x$narratives <- cmpl_formatted$cdescr[ cmpl_formatted$platform %in% x$platform &
+                                             cmpl_formatted$component %in% x$component &
+                                             cmpl_formatted$datea %in% dates ]
+    
+  }
+  
 
-# remove irrelevant model years
-corvette <- mapply(FUN = function(data, my) data[ data$vin_modelyear %in% my , ],
-                   data = corvette, my = corvette_my, 
-                   SIMPLIFY = FALSE)
+  
+  # return x
+  x
+}, mc.cores = 3)
 
-corvette_summaries <- lapply(corvette, function(x){
-  Summarize(docs = x$cdescr)
-})
+# remove any issues where there are no narratives (need to look into this)
+nl <- sapply(cmpl_events2, function(x) length(x$narratives))
+
+cmpl_events2 <- cmpl_events2[ nl > 0 ]
+
+# summarize
+cmpl_events2 <- parallel::mclapply(cmpl_events2, function(x){
+  if(length(x[ "narratives" ][[ 1 ]]) > 0){
+    x$summaries <- Summarize(stringr::str_conv(x[ "narratives" ][[ 1 ]], "UTF-8"))
+  }
+  x
+}, mc.cores = 3)
+
+
+# ### Chevy corvette example -------------------------
+# # I have a lot to work out, so this is mostly experimentation
+# 
+# corvette <- cmpl_events[ grepl("CHEVROLET_CORVETTE", names(cmpl_events)) ]
+# 
+# names(corvette)
+# 
+# # so inefficient!!!
+# corvette <- lapply(corvette, function(x){
+#   dates <- seq(min(x$date) - 364, max(x$date), by = "day")
+#   
+#   cmpl_formatted[ cmpl_formatted$platform %in% x$platform &  
+#                     cmpl_formatted$component %in% x$component &
+#                     cmpl_formatted$datea %in% dates , ]
+#   
+# })
+# 
+# # which model years matter?
+# corvette_my <- lapply(corvette, function(x){
+#   my_freq <- table(x$vin_modelyear)
+#   my_freq <- my_freq / sum(my_freq, na.rm = T)
+#   
+#   cs <- cumsum(sort(my_freq, decreasing = TRUE))
+#   
+#   if(max(my_freq) >= 0.8)
+#     return(sort(names(my_freq)[ my_freq > 0.15 ]))
+#   
+#   result <- intersect(names(cs)[ cs < 0.8 ], 
+#                       names(my_freq)[ my_freq > 0.05 ])
+#   
+#   sort(result)
+# })
+# 
+# # remove irrelevant model years
+# corvette <- mapply(FUN = function(data, my) data[ data$vin_modelyear %in% my , ],
+#                    data = corvette, my = corvette_my, 
+#                    SIMPLIFY = FALSE)
+# 
+# corvette_summaries <- lapply(corvette, function(x){
+#   Summarize(docs = x$cdescr)
+# })
