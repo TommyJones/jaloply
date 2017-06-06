@@ -32,6 +32,8 @@ vin_merge$model <- toupper(vin_merge$model)
 
 names(vin_merge)[ 2:4 ] <- paste0("vin_", names(vin_merge[ 2:4 ]))
 
+vin_merge$vin_make <- gsub(",.+$", "", vin_merge$vin_make) # get rid of repeat/multiple makes
+
 cmpl$vin <- substr(cmpl$vin, 1, 10)
 
 cmpl_formatted <- merge(cmpl, vin_merge)
